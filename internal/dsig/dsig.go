@@ -7,6 +7,8 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"errors"
+	"fmt"
+	"regexp"
 )
 
 type Reference struct {
@@ -22,12 +24,16 @@ type Signature struct {
 	SignatureValue string
 }
 
-func (s *Signature) Verify(cert *x509.Certificate) error {
-	var assertionWithoutSignature []byte
-	var signedInfo []byte
+func (s *Signature) Verify(assertResContent []byte, cert *x509.Certificate) error {
+	assertWithoutSig, signedInfo, err := splitAssertResContentSig(assertResContent)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(assertWithoutSig), string(signedInfo))
 
 	h := crypto.SHA256.New()
-	h.Write(assertionWithoutSignature)
+	h.Write(assertWithoutSig)
 
 	expectedDigestValue, err := base64.StdEncoding.DecodeString(s.SignedInfo.Reference.DigestValue)
 	if err != nil {
@@ -35,6 +41,7 @@ func (s *Signature) Verify(cert *x509.Certificate) error {
 	}
 
 	if !bytes.Equal(expectedDigestValue, h.Sum(nil)) {
+		// TODO: Notify client that this is 400
 		return errors.New("[dsig]: Digest value does not match")
 	}
 
@@ -51,5 +58,26 @@ func (s *Signature) Verify(cert *x509.Certificate) error {
 		return err
 	}
 
-	return rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, h.Sum(nil), expectedSignatureValue)
+	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, h.Sum(nil), expectedSignatureValue)
+	if err != nil {
+		// TODO: Notify client that this is 400
+		return err
+	}
+
+	return nil
+}
+
+func splitAssertResContentSig(assertResContent []byte) ([]byte, []byte, error) {
+	assertWithoutSigRe := regexp.MustCompile(`(?s)<Signature.*?</Signature>`)
+
+	assertWithoutSig := assertWithoutSigRe.ReplaceAll(assertResContent, []byte(""))
+
+	signedInfoRe := regexp.MustCompile(`(?s)<SignedInfo.*?</SignedInfo>`)
+
+	signedInfo := signedInfoRe.Find(assertResContent)
+	if signedInfo == nil {
+		return nil, nil, fmt.Errorf("[dsig]: no match for SignedInfo")
+	}
+
+	return assertWithoutSig, signedInfo, nil
 }
