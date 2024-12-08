@@ -1,4 +1,4 @@
-package main
+package dsig
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 )
 
 type Reference struct {
-	DigestValue string
+	DigestValue string `xml:""`
 }
 
 type SignedInfo struct {

@@ -1,0 +1,14 @@
+<Foo favoriteNumber="42">
+	<favoriteQuote>hello</favoriteQuote>
+	<ds:Signature
+		xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+		<ds:SignedInfo>
+			<ds:Reference>
+				<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"></ds:DigestMethod>
+				<ds:DigestValue>TakSS5ndDNzYd32+E3GGQlZJ3j0=</ds:DigestValue>
+			</ds:Reference>
+			<ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"></ds:SignatureMethod>
+		</ds:SignedInfo>
+		<ds:SignatureValue>L4l1Qyp8kVFaZ9893/IW0bEBGBuAavssuv916PuM/e7RAR7qQ/PZ4M8Lo5WcMXV2GYLoRttTurt0I9udTs4SO4yv+JitlXdvWUllgLQNR9kMHpFwzkyv2Pw6m3j6Jdix9kVD7nh50OUcBJDJSk+WLa55TWLe++RejjPfUezPoAY=</ds:SignatureValue>
+	</ds:Signature>
+</Foo>
