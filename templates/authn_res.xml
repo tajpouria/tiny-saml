@@ -1,0 +1,38 @@
+<samlp:Response
+    xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
+    ID="{{ .ID }}"
+    InResponseTo="{{ .InResponseTo }}"
+    Version="2.0"
+    IssueInstant="{{ .IssueInstant }}"
+    Destination="{{ .Destination }}"
+>
+    <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+        urn:idp.tajpouria.com
+    </saml:Issuer>
+    <samlp:Status>
+        <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+    </samlp:Status>
+    <saml:Assertion
+        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+        Version="2.0"
+        ID="{{ .ID }}"
+        IssueInstant="{{ .IssueInstant }}"
+    >
+        <saml:Issuer>
+            urn:idp.tajpouria.com
+        </saml:Issuer>
+        <saml:AuthnStatement AuthnInstant="{{ .IssueInstant }}"/>
+        <saml:AttributeStatement>
+            <saml:Attribute Name="name">
+                <saml:AttributeValue>
+                    {{ .Name }}
+                </saml:AttributeValue>
+            </saml:Attribute>
+            <saml:Attribute Name="email">
+                <saml:AttributeValue>
+                    {{ .Email }}
+                </saml:AttributeValue>
+            </saml:Attribute>
+        </saml:AttributeStatement>
+    </saml:Assertion>
+</samlp:Response>

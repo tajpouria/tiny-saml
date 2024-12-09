@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/tajpouria/tiny-saml/internal/authn"
 	"github.com/tajpouria/tiny-saml/internal/dsig"
 )
 
@@ -19,7 +20,7 @@ const (
 	idpPkPath     = "samples/private_key.pem"
 )
 
-type AssertionRes struct {
+type AuthnRes struct {
 	FavoriteNumber int    `xml:"favoriteNumber,attr"`
 	FavoriteQuote  string `xml:"favoriteQuote"`
 	Signature      dsig.Signature
@@ -27,7 +28,6 @@ type AssertionRes struct {
 
 func main() {
 	// Read assertion response
-
 	assertResFile, err := os.Open(assertResPath)
 	if err != nil {
 		log.Fatalf("Failed to open assertion response file: %v", err)
@@ -38,7 +38,7 @@ func main() {
 		log.Fatalf("Failed to read assertion response file: %v", err)
 	}
 
-	var assertRes AssertionRes
+	var assertRes AuthnRes
 	err = xml.Unmarshal(assertResB, &assertRes)
 	if err != nil {
 		log.Fatalf("Failed to unmarshal assertion response: %v", err)
