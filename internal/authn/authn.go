@@ -28,13 +28,13 @@ type AuthnResData struct {
 func CreateAuthnReq(d *AuthnReqData) ([]byte, error) {
 	tmpl, err := template.ParseFiles(authnReqPath)
 	if err != nil {
-		return nil, fmt.Errorf("[autn]: Failed to parse authn request template: %v\n", err)
+		return nil, fmt.Errorf("[authn]: Failed to parse authn request template: %v", err)
 	}
 
 	var output bytes.Buffer
 	err = tmpl.Execute(&output, d)
 	if err != nil {
-		return nil, fmt.Errorf("[authn]: Failed to execute authn request template: %v\n", err)
+		return nil, fmt.Errorf("[authn]: Failed to execute authn request template: %v", err)
 	}
 
 	return output.Bytes(), nil
@@ -43,13 +43,13 @@ func CreateAuthnReq(d *AuthnReqData) ([]byte, error) {
 func CreateAuthnRes(d *AuthnResData) ([]byte, error) {
 	tmpl, err := template.ParseFiles(authnResPath)
 	if err != nil {
-		return nil, fmt.Errorf("[autn]: Failed to parse authn response template: %v\n", err)
+		return nil, fmt.Errorf("[authn]: Failed to parse authn response template: %v", err)
 	}
 
 	var output bytes.Buffer
 	err = tmpl.Execute(&output, d)
 	if err != nil {
-		return nil, fmt.Errorf("[autn]: Failed to exec authn response template: %v\n", err)
+		return nil, fmt.Errorf("[authn]: Failed to exec authn response template: %v", err)
 	}
 
 	return output.Bytes(), nil
