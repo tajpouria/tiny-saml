@@ -24,8 +24,8 @@ type Signature struct {
 	SignatureValue string
 }
 
-func (s *Signature) Verify(assertResB []byte, publicKey *rsa.PublicKey) error {
-	assertWithoutSig, signedInfo, err := splitAssertResSig(assertResB)
+func (s *Signature) Verify(assertRes []byte, publicKey *rsa.PublicKey) error {
+	assertWithoutSig, signedInfo, err := splitAssertResSig(assertRes)
 	if err != nil {
 		return fmt.Errorf("[dsig]: Failed to split assertion response signature: %v", err)
 	}
@@ -62,8 +62,8 @@ func (s *Signature) Verify(assertResB []byte, publicKey *rsa.PublicKey) error {
 	return nil
 }
 
-func (s *Signature) Sign(assertResB []byte, privateKey *rsa.PrivateKey) error {
-	_, signedInfo, err := splitAssertResSig(assertResB)
+func AddSignature(authnRes []byte, privateKey *rsa.PrivateKey) error {
+	_, signedInfo, err := splitAssertResSig(authnRes)
 	if err != nil {
 		return fmt.Errorf("[dsig]: Failed to split assertion response signature: %v", err)
 	}
@@ -83,14 +83,12 @@ func (s *Signature) Sign(assertResB []byte, privateKey *rsa.PrivateKey) error {
 	return nil
 }
 
-func splitAssertResSig(assertResB []byte) ([]byte, []byte, error) {
+func splitAssertResSig(assertRes []byte) ([]byte, []byte, error) {
 	assertWithoutSigRe := regexp.MustCompile(`(?s)<Signature.*?</Signature>`)
-
-	assertWithoutSig := assertWithoutSigRe.ReplaceAll(assertResB, []byte(""))
+	assertWithoutSig := assertWithoutSigRe.ReplaceAll(assertRes, []byte(""))
 
 	signedInfoRe := regexp.MustCompile(`(?s)<SignedInfo.*?</SignedInfo>`)
-
-	signedInfo := signedInfoRe.Find(assertResB)
+	signedInfo := signedInfoRe.Find(assertRes)
 	if signedInfo == nil {
 		return nil, nil, fmt.Errorf("[dsig]: no match for SignedInfo")
 	}

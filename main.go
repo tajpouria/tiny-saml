@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/tajpouria/tiny-saml/internal/authn"
 	"github.com/tajpouria/tiny-saml/internal/dsig"
@@ -21,12 +22,45 @@ const (
 )
 
 type AuthnRes struct {
-	FavoriteNumber int    `xml:"favoriteNumber,attr"`
-	FavoriteQuote  string `xml:"favoriteQuote"`
-	Signature      dsig.Signature
+	Signature dsig.Signature
 }
 
 func main() {
+	// Read private key
+
+	idpPkFile, err := os.Open(idpPkPath)
+	if err != nil {
+		log.Fatalf("Failed to open idP pk file: %v", err)
+	}
+
+	idpPkB, err := io.ReadAll(idpPkFile)
+	if err != nil {
+		log.Fatalf("Failed to read idP PK file: %v", err)
+	}
+
+	idpPkBlock, _ := pem.Decode(idpPkB)
+	if idpPkBlock == nil {
+		log.Fatalf("Failed to PEM parse idP PK block")
+	}
+
+	idpPrivateKey, err := x509.ParsePKCS1PrivateKey(idpPkBlock.Bytes)
+	if err != nil {
+		log.Fatalf("Failed to X.509 parse idP PK block: %v", err)
+	}
+
+	authnResData := authn.AuthnRes{
+		ID:           "id",
+		InResponseTo: "respond_to_id",
+		IssueInstant: time.Now().UTC().Format(time.RFC3339),
+		Destination:  "http://localhost:8080/idp",
+		Name:         "Pouria",
+		Email:        "tajpouria.dev@gmail.com",
+	}
+	authnRes, err := authn.CreateAuthnResXML(&authnResData)
+	if err != nil {
+		log.Fatalf("Failed to create authn response: %v", err)
+	}
+
 	// Read assertion response
 	assertResFile, err := os.Open(assertResPath)
 	if err != nil {
@@ -69,31 +103,6 @@ func main() {
 	idpPublicKey, ok := idpCert.PublicKey.(*rsa.PublicKey)
 	if !ok {
 		log.Fatalf("Public key must be *rsa.PublicKey")
-	}
-	// Read private key
-
-	idpPkFile, err := os.Open(idpPkPath)
-	if err != nil {
-		log.Fatalf("Failed to open idP pk file: %v", err)
-	}
-
-	idpPkB, err := io.ReadAll(idpPkFile)
-	if err != nil {
-		log.Fatalf("Failed to read idP PK file: %v", err)
-	}
-
-	idpPkBlock, _ := pem.Decode(idpPkB)
-	if idpPkBlock == nil {
-		log.Fatalf("Failed to PEM parse idP PK block")
-	}
-
-	idpPrivateKey, err := x509.ParsePKCS1PrivateKey(idpPkBlock.Bytes)
-	if err != nil {
-		log.Fatalf("Failed to X.509 parse idP PK block: %v", err)
-	}
-
-	err = assertRes.Signature.Sign(assertResB, idpPrivateKey)
-	if err != nil {
 	}
 
 	err = assertRes.Signature.Verify(assertResB, idpPublicKey)

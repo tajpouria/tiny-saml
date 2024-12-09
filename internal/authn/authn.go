@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	authnReqPath = "templates/authn_req.xml"
-	authnResPath = "templates/authn_res.xml"
+	authnReqPath       = "templates/authn_req.xml"
+	authnResPath       = "templates/authn_res.xml"
+	authnResAssertPath = "templates/authn_res_assert.xml"
 )
 
 type AuthnReqData struct {
@@ -16,13 +17,14 @@ type AuthnReqData struct {
 	IssueInstant string
 }
 
-type AuthnResData struct {
+type AuthnRes struct {
 	ID           string
 	InResponseTo string
 	IssueInstant string
 	Destination  string
 	Name         string
 	Email        string
+	StatusCode   string
 }
 
 func CreateAuthnReq(d *AuthnReqData) ([]byte, error) {
@@ -40,14 +42,14 @@ func CreateAuthnReq(d *AuthnReqData) ([]byte, error) {
 	return output.Bytes(), nil
 }
 
-func CreateAuthnRes(d *AuthnResData) ([]byte, error) {
-	tmpl, err := template.ParseFiles(authnResPath)
+func (ar *AuthnRes) CreateAuthnResXML() ([]byte, error) {
+	tmpl, err := template.ParseFiles(authnResAssertPath)
 	if err != nil {
-		return nil, fmt.Errorf("[authn]: Failed to parse authn response template: %v", err)
+		return nil, fmt.Errorf("[authn]: Failed to parse authn response assertion template: %v", err)
 	}
 
 	var output bytes.Buffer
-	err = tmpl.Execute(&output, d)
+	err = tmpl.Execute(&output, ar)
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to exec authn response template: %v", err)
 	}

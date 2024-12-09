@@ -1,0 +1,23 @@
+<saml:Assertion
+        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+        Version="2.0"
+        ID="{{ .ID }}"
+        IssueInstant="{{ .IssueInstant }}"
+    >
+    <saml:Issuer>
+        urn:idp.tajpouria.com
+    </saml:Issuer>
+    <saml:AuthnStatement AuthnInstant="{{ .IssueInstant }}"/>
+    <saml:AttributeStatement>
+        <saml:Attribute Name="name">
+            <saml:AttributeValue>
+                {{ .Name }}
+            </saml:AttributeValue>
+        </saml:Attribute>
+        <saml:Attribute Name="email">
+            <saml:AttributeValue>
+                {{ .Email }}
+            </saml:AttributeValue>
+        </saml:Attribute>
+    </saml:AttributeStatement>
+</saml:Assertion>
