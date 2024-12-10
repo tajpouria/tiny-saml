@@ -12,10 +12,10 @@
     {{- end }}
     <saml:AuthnStatement AuthnInstant="{{ .IssueInstant }}"/>
     <saml:AttributeStatement>
-        {{- range .Attributes }}
+        {{- range .Attributes -}}
         <saml:Attribute Name="{{ .Name }}">
             <saml:AttributeValue>{{ .Value }}</saml:AttributeValue>
         </saml:Attribute>
-        {{- end }}
+        {{- end -}}
     </saml:AttributeStatement>
 </saml:Assertion>

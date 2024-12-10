@@ -7,7 +7,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
-	"html/template"
+	"text/template"
 )
 
 const (

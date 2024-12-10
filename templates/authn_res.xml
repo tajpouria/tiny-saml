@@ -12,7 +12,7 @@
     <samlp:Status>
         <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
     </samlp:Status>
-    {{- if .AssertionElement }}
+    {{- if .AssertionElement -}}
     {{ .AssertionElement }}
-    {{- end }}
+    {{- end -}}
 </samlp:Response>
