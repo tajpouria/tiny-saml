@@ -30,7 +30,7 @@
     </style>
   </head>
   <body>
-    <h1>Identity Provider SSO Login</h1>
+    <h1>Identity Provider SSO</h1>
     <form id="sso-login-form">
       <label>Username <input type="text" name="username" required /></label>
       <label>Password <input type="password" name="password" required /></label>
@@ -49,7 +49,7 @@
           formData.append("SAMLRequest", samlRequest);
 
           try {
-            const response = await fetch("/idp/sso/login", {
+            const response = await fetch("/idp/sso/logon", {
               method: "POST",
               body: formData,
             });

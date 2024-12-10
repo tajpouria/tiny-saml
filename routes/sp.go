@@ -37,7 +37,7 @@ func samlInitHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to generate authn request XML: %v", err)
 	}
 
-	// Compress the authn request
+	// Compress authn request
 	var flateOutput bytes.Buffer
 	fw, err := flate.NewWriter(&flateOutput, 2)
 	if err != nil {
@@ -55,7 +55,7 @@ func samlInitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	authnReqB = flateOutput.Bytes()
 
-	// Base64 encode the authn request
+	// Base64 encode authn request
 	authnReqS := base64.StdEncoding.EncodeToString(authnReqB)
 
 	// Redirect to idP SSO endpoint with authn request

@@ -103,5 +103,5 @@ func main() {
 	routes.SPRoutes(mux)
 	routes.IDPRoutes(mux)
 	fmt.Println("Server running at http://localhost:8000")
-	http.ListenAndServe(":8000", mux)
+	log.Fatal(http.ListenAndServe(":8000", mux))
 }

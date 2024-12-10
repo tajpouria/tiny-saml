@@ -20,8 +20,9 @@ const (
 )
 
 type Request struct {
-	ID           string
-	IssueInstant string
+	ID                          string `xml:"ID,attr"`
+	IssueInstant                string `xml:"IssueInstant,attr"`
+	AssertionConsumerServiceURL string `xml:"AssertionConsumerServiceURL,attr"`
 }
 
 type Response struct {
