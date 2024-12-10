@@ -1,18 +1,1 @@
-<samlp:Response
-    xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
-    ID="{{ .ID }}"
-    InResponseTo="{{ .InResponseTo }}"
-    Version="2.0"
-    IssueInstant="{{ .IssueInstant }}"
-    Destination="{{ .Destination }}"
->
-    <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-        urn:idp.tajpouria.com
-    </saml:Issuer>
-    <samlp:Status>
-        <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
-    </samlp:Status>
-    {{- if .AssertionElement -}}
-    {{ .AssertionElement }}
-    {{- end -}}
-</samlp:Response>
+<Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="{{ .ID }}" InResponseTo="{{ .InResponseTo }}" Version="2.0" IssueInstant="{{ .IssueInstant }}" Destination="{{ .Destination }}"><Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">urn:idp.tajpouria.com</Issuer><Status><StatusCode Value="{{ .StatusCode }}"/></Status>{{- if .AssertionElement -}}{{ .AssertionElement }}{{- end -}}</Response>

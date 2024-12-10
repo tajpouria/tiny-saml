@@ -1,8 +1,11 @@
 package main
 
 import (
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -10,18 +13,12 @@ import (
 	"time"
 
 	"github.com/tajpouria/tiny-saml/internal/authn"
-	"github.com/tajpouria/tiny-saml/internal/dsig"
 )
 
 const (
-	assertResPath = "samples/sample.xml"
-	idpCertPath   = "samples/certificate.pem"
-	idpPkPath     = "samples/private_key.pem"
+	idpCertPath = "samples/certificate.pem"
+	idpPkPath   = "samples/private_key.pem"
 )
-
-type AuthnRes struct {
-	Signature dsig.Signature
-}
 
 func main() {
 	// Read private key
@@ -41,70 +38,63 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to X.509 parse idP PK block: %v", err)
 	}
-	authnResData := authn.Res{
+	authnResD := authn.Response{
 		ID:           "id",
 		InResponseTo: "respond_to_id",
 		IssueInstant: time.Now().UTC().Format(time.RFC3339),
 		Destination:  "http://localhost:8080/idp",
+		StatusCode: authn.StatusCode{
+			Value: "urn:oasis:names:tc:SAML:2.0:status:Success",
+		},
 		Attributes: []authn.Attribute{
 			{Name: "Name", Value: "Pouria"},
 			{Name: "Email", Value: "tajpouria.dev@gmail.com"},
 		},
 	}
-	authnRes, err := authnResData.GenerateXML(idpPrivateKey)
+	authnResB, err := authnResD.GenerateXML(idpPrivateKey)
 	if err != nil {
 		log.Fatalf("Failed to create authn response: %v", err)
 	}
-	fmt.Println(string(authnRes))
 
-	// Read assertion response
-	// assertResFile, err := os.Open(assertResPath)
-	// if err != nil {
-	// 	log.Fatalf("Failed to open assertion response file: %v", err)
-	// }
+	// Unmarshal authnRes
 
-	// assertResB, err := io.ReadAll(assertResFile)
-	// if err != nil {
-	// 	log.Fatalf("Failed to read assertion response file: %v", err)
-	// }
-
-	// var assertRes AuthnRes
-	// err = xml.Unmarshal(assertResB, &assertRes)
-	// if err != nil {
-	// 	log.Fatalf("Failed to unmarshal assertion response: %v", err)
-	// }
+	var authnRes authn.Response
+	err = xml.Unmarshal(authnResB, &authnRes)
+	if err != nil {
+		log.Fatalf("Failed to XML unmarshal authn response %v", err)
+	}
 
 	// Read certificate
 
-	// idpCertFile, err := os.Open(idpCertPath)
-	// if err != nil {
-	// 	log.Fatalf("Failed to open idP cert file: %v", err)
-	// }
+	idpCertFile, err := os.Open(idpCertPath)
+	if err != nil {
+		log.Fatalf("Failed to open idP cert file: %v", err)
+	}
+	idpCertB, err := io.ReadAll(idpCertFile)
+	if err != nil {
+		log.Fatalf("Failed to read idP cert file: %v", err)
+	}
+	idpCertBlock, _ := pem.Decode(idpCertB)
+	if idpCertBlock == nil {
+		log.Fatalf("Failed to PEM parse idP certificate: %s", idpCertPath)
+	}
+	idpCert, err := x509.ParseCertificate(idpCertBlock.Bytes)
+	if err != nil {
+		log.Fatalf("Failed to X.509 parse idP certificate block %v", err)
+	}
+	idpPublicKey, ok := idpCert.PublicKey.(*rsa.PublicKey)
+	if !ok {
+		log.Fatalf("Public key must be *rsa.PublicKey")
+	}
 
-	// idpCertB, err := io.ReadAll(idpCertFile)
-	// if err != nil {
-	// 	log.Fatalf("Failed to read idP cert file: %v", err)
-	// }
+	err = authnRes.Verify(&authnResB, idpPublicKey)
+	var errAuthnResponse *authn.ErrBadSignature
+	if err != nil {
+		if errors.As(err, &errAuthnResponse) {
+			log.Fatalf("BAD Authn Response: Failed to verify authn response: %v", err)
+		}
+		log.Fatalf("Failed to verify authn response: %v", err)
+	}
 
-	// idpCertBlock, _ := pem.Decode(idpCertB)
-	// if idpCertBlock == nil {
-	// 	log.Fatalf("Failed to PEM parse idP certificate: %s", idpCertPath)
-	// }
-
-	// idpCert, err := x509.ParseCertificate(idpCertBlock.Bytes)
-	// if err != nil {
-	// 	log.Fatalf("Failed to X.509 parse idP certificate block %v", err)
-	// }
-
-	// idpPublicKey, ok := idpCert.PublicKey.(*rsa.PublicKey)
-	// if !ok {
-	// 	log.Fatalf("Public key must be *rsa.PublicKey")
-	// }
-
-	// err = assertRes.Signature.Verify(assertResB, idpPublicKey)
-	// if err != nil {
-	// 	log.Fatalf("Failed to verify assertion response %v", err)
-	// }
-
-	// fmt.Println("Assertion response signature is valid!")
+	fmt.Println("authn response is valid!")
 }

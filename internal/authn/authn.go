@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
+	"regexp"
 	"text/template"
 )
 
@@ -18,39 +19,47 @@ const (
 	authnResTmplPath        = "templates/authn_res.xml"
 )
 
-type AuthnReqData struct {
+type Request struct {
 	ID           string
 	IssueInstant string
 }
 
-type Res struct {
-	ID           string      `xml:"ID,attr"`
-	InResponseTo string      `xml:"InResponseTo,attr"`
-	IssueInstant string      `xml:"IssueInstant,attr"`
-	Destination  string      `xml:"Destination,attr"`
-	StatusCode   string      `xml:"StatusCode,attr"`
-	Attributes   []Attribute `xml:"saml:Attribute"`
-	Signature    Signature   `xml:"Signature:omitempty"`
+type Response struct {
+	ID             string      `xml:"ID,attr"`
+	InResponseTo   string      `xml:"InResponseTo,attr"`
+	IssueInstant   string      `xml:"IssueInstant,attr"`
+	Destination    string      `xml:"Destination,attr"`
+	StatusCode     StatusCode  `xml:"Status>StatusCode"`
+	Attributes     []Attribute `xml:"Assertion>AttributeStatement>Attribute"`
+	DigestValue    string      `xml:"Assertion>Signature>SignedInfo>Reference>DigestValue"`
+	SignatureValue string      `xml:"Assertion>Signature>SignatureValue"`
+}
+
+type StatusCode struct {
+	Value string `xml:"Value,attr"`
 }
 
 type Attribute struct {
 	Name  string `xml:"Name,attr"`
-	Value string `xml:"saml:AttributeValue"`
+	Value string `xml:"AttributeValue"`
 }
 
-type Signature struct {
-	DigestValue    string `xml:"ds:DigestValue"`
-	SignatureValue string `xml:"ds:SignatureValue"`
+type ErrBadSignature struct {
+	Message string
 }
 
-func CreateAuthnReq(d *AuthnReqData) ([]byte, error) {
+func (e *ErrBadSignature) Error() string {
+	return e.Message
+}
+
+func (r *Request) GenerateXML() ([]byte, error) {
 	tmpl, err := template.ParseFiles(authnReqTmplPath)
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to parse authn request template: %v", err)
 	}
 
 	var output bytes.Buffer
-	err = tmpl.Execute(&output, d)
+	err = tmpl.Execute(&output, r)
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to execute authn request (w/o signature) template: %v", err)
 	}
@@ -58,7 +67,7 @@ func CreateAuthnReq(d *AuthnReqData) ([]byte, error) {
 	return output.Bytes(), nil
 }
 
-func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
+func (r *Response) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	var tmplOutput bytes.Buffer
 
 	// Create the assertion without signature
@@ -74,7 +83,7 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to exec assertion template: %v", err)
 	}
-	assertB := tmplOutput.Bytes()
+	assertB := bytes.TrimSpace(tmplOutput.Bytes())
 	tmplOutput.Reset()
 
 	// Calculate the digest of the assertion for signed info
@@ -103,7 +112,7 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: SignPKCS1v15 failed: %v", err)
 	}
-	sigVal := base64.StdEncoding.EncodeToString(sigB)
+	sigValB := base64.StdEncoding.EncodeToString(sigB)
 
 	// Create the signature
 	tmpl, err = template.ParseFiles(authnResSigTmplPath)
@@ -112,7 +121,7 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	}
 	err = tmpl.Execute(&tmplOutput, map[string]string{
 		"SignedInfoElement": string(sigInfoB),
-		"SignatureValue":    sigVal,
+		"SignatureValue":    sigValB,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to exec signature template: %v", err)
@@ -147,10 +156,66 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 		"InResponseTo":     r.InResponseTo,
 		"IssueInstant":     r.IssueInstant,
 		"Destination":      r.Destination,
+		"StatusCode":       r.StatusCode.Value,
 		"AssertionElement": string(assertB),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to exec authn response template")
+		return nil, fmt.Errorf("[authn]: Failed to exec authn response template; %v", err)
 	}
 	return tmplOutput.Bytes(), nil
+}
+
+func (r *Response) Verify(authnRes *[]byte, publicKey *rsa.PublicKey) error {
+	// Extract the assertion
+	assertRe, err := regexp.Compile(`(?s)<Assertion.*?</Assertion>`)
+	if err != nil {
+		return fmt.Errorf("[authn]: Failed to compile assertion regexp: %v", err)
+	}
+	assertB := assertRe.Find(*authnRes)
+	if assertB == nil {
+		return &ErrBadSignature{Message: "assertion is empty"}
+	}
+
+	// Extract the signed info
+	sigInfoRe, err := regexp.Compile(`(?s)<SignedInfo.*?</SignedInfo>`)
+	if err != nil {
+		return fmt.Errorf("[authn]: Failed to signed info regexp: %v", err)
+	}
+	sigInfoB := sigInfoRe.Find(*authnRes)
+	if sigInfoB == nil {
+		return &ErrBadSignature{Message: "signed info is empty"}
+	}
+
+	// Remove the signature from assertion
+	sigRe, err := regexp.Compile(`(?s)<Signature.*?</Signature>`)
+	if err != nil {
+		return fmt.Errorf("[authn]: Failed to compile signature regexp: %v", err)
+	}
+	assertB = sigRe.ReplaceAll(assertB, []byte(""))
+	assertB = bytes.TrimSpace(assertB)
+
+	// Verify the assertion
+	digestValB, err := base64.StdEncoding.DecodeString(r.DigestValue)
+	if err != nil {
+		return &ErrBadSignature{Message: fmt.Sprintf("failed to base64 decode assertion digest value: %v", err)}
+	}
+	assertH := crypto.SHA256.New()
+	assertH.Write(assertB)
+	if !bytes.Equal(digestValB, assertH.Sum(nil)) {
+		return &ErrBadSignature{Message: "assertion digest does not match the digest value"}
+	}
+
+	// Verify the signature value
+	sigValB, err := base64.StdEncoding.DecodeString(r.SignatureValue)
+	if err != nil {
+		return &ErrBadSignature{Message: fmt.Sprintf("failed to base64 decode signature value: %v", err)}
+	}
+	sigInfoH := crypto.SHA256.New()
+	sigInfoH.Write(sigInfoB)
+	err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA256, sigInfoH.Sum(nil), sigValB)
+	if err != nil {
+		return &ErrBadSignature{Message: fmt.Sprintf("failed to verify signature value: %v", err)}
+	}
+
+	return nil
 }
