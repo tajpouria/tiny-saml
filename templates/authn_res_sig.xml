@@ -1,0 +1,4 @@
+<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    {{ .SignedInfoElement }}
+    <ds:SignatureValue>{{ .SignatureValue }}</ds:SignatureValue>
+</ds:Signature>

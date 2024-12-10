@@ -48,18 +48,22 @@ func main() {
 		log.Fatalf("Failed to X.509 parse idP PK block: %v", err)
 	}
 
-	authnResData := authn.AuthnRes{
+	authnResData := authn.Res{
 		ID:           "id",
 		InResponseTo: "respond_to_id",
 		IssueInstant: time.Now().UTC().Format(time.RFC3339),
 		Destination:  "http://localhost:8080/idp",
-		Name:         "Pouria",
-		Email:        "tajpouria.dev@gmail.com",
+		Attributes: []authn.Attribute{
+			{Name: "Name", Value: "Pouria"},
+			{Name: "Email", Value: "tajpouria.dev@gmail.com"},
+		},
 	}
-	authnRes, err := authn.CreateAuthnResXML(&authnResData)
+	authnRes, err := authnResData.GenerateXML(idpPrivateKey)
 	if err != nil {
 		log.Fatalf("Failed to create authn response: %v", err)
 	}
+
+	fmt.Println(string(authnRes))
 
 	// Read assertion response
 	assertResFile, err := os.Open(assertResPath)

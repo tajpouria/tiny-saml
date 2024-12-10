@@ -7,17 +7,15 @@
     <saml:Issuer>
         urn:idp.tajpouria.com
     </saml:Issuer>
+    {{- if .SignatureElement }}
+    {{ .SignatureElement }}
+    {{- end }}
     <saml:AuthnStatement AuthnInstant="{{ .IssueInstant }}"/>
     <saml:AttributeStatement>
-        <saml:Attribute Name="name">
-            <saml:AttributeValue>
-                {{ .Name }}
-            </saml:AttributeValue>
+        {{- range .Attributes }}
+        <saml:Attribute Name="{{ .Name }}">
+            <saml:AttributeValue>{{ .Value }}</saml:AttributeValue>
         </saml:Attribute>
-        <saml:Attribute Name="email">
-            <saml:AttributeValue>
-                {{ .Email }}
-            </saml:AttributeValue>
-        </saml:Attribute>
+        {{- end }}
     </saml:AttributeStatement>
 </saml:Assertion>

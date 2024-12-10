@@ -12,5 +12,7 @@
     <samlp:Status>
         <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
     </samlp:Status>
-    {{ .AuthnResAssert }}
+    {{- if .AssertionElement }}
+    {{ .AssertionElement }}
+    {{- end }}
 </samlp:Response>
