@@ -62,12 +62,10 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	var tmplOutput bytes.Buffer
 
 	// Create the assertion without signature
-
 	tmpl, err := template.ParseFiles(authnResAssertTmplPath)
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to parse assertion template: %v", err)
 	}
-
 	err = tmpl.Execute(&tmplOutput, map[string]any{
 		"ID":           r.ID,
 		"IssueInstant": r.IssueInstant,
@@ -76,54 +74,42 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to exec assertion template: %v", err)
 	}
-
 	assertB := tmplOutput.Bytes()
-
 	tmplOutput.Reset()
 
 	// Calculate the digest of the assertion for signed info
-
 	assertH := crypto.SHA256.New()
 	assertH.Write(assertB)
 	assertDigestVal := base64.StdEncoding.EncodeToString(assertH.Sum(nil))
 
 	// Create the signed info
-
 	tmpl, err = template.ParseFiles(authnResSigInfoTmplPath)
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to parse signature info template %v", err)
 	}
-
 	err = tmpl.Execute(&tmplOutput, map[string]string{
 		"DigestValue": assertDigestVal,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to exec signature info template %v", err)
 	}
-
 	sigInfoB := tmplOutput.Bytes()
-
 	tmplOutput.Reset()
 
 	// Calculate the signature value for the signature
-
 	sigInfoH := crypto.SHA256.New()
 	sigInfoH.Write(sigInfoB)
-
 	sigB, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, sigInfoH.Sum(nil))
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: SignPKCS1v15 failed: %v", err)
 	}
-
 	sigVal := base64.StdEncoding.EncodeToString(sigB)
 
 	// Create the signature
-
 	tmpl, err = template.ParseFiles(authnResSigTmplPath)
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to parse signature template: %v", err)
 	}
-
 	err = tmpl.Execute(&tmplOutput, map[string]string{
 		"SignedInfoElement": string(sigInfoB),
 		"SignatureValue":    sigVal,
@@ -131,18 +117,14 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to exec signature template: %v", err)
 	}
-
 	sigB = tmplOutput.Bytes()
-
 	tmplOutput.Reset()
 
 	// Create the assertion with signature
-
 	tmpl, err = template.ParseFiles(authnResAssertTmplPath)
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to parse assertion template: %v", err)
 	}
-
 	err = tmpl.Execute(&tmplOutput, map[string]any{
 		"ID":               r.ID,
 		"IssueInstant":     r.IssueInstant,
@@ -152,18 +134,14 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to exec assertion template: %v", err)
 	}
-
 	assertB = tmplOutput.Bytes()
-
 	tmplOutput.Reset()
 
 	// Create the authentication response
-
 	tmpl, err = template.ParseFiles(authnResTmplPath)
 	if err != nil {
 		return nil, fmt.Errorf("[authn]: Failed to parse authn response template: %v", err)
 	}
-
 	err = tmpl.Execute(&tmplOutput, map[string]string{
 		"ID":               r.ID,
 		"InResponseTo":     r.InResponseTo,
@@ -174,6 +152,5 @@ func (r *Res) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to exec authn response template")
 	}
-
 	return tmplOutput.Bytes(), nil
 }
