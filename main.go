@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/tajpouria/tiny-saml/internal/authn"
+	"github.com/tajpouria/tiny-saml/routes"
 )
 
 const (
@@ -42,7 +44,7 @@ func main() {
 		ID:           "id",
 		InResponseTo: "respond_to_id",
 		IssueInstant: time.Now().UTC().Format(time.RFC3339),
-		Destination:  "http://localhost:8080/idp",
+		Destination:  "http://localhost:8000/idp",
 		StatusCode: authn.StatusCode{
 			Value: "urn:oasis:names:tc:SAML:2.0:status:Success",
 		},
@@ -97,4 +99,9 @@ func main() {
 	}
 
 	fmt.Println("authn response is valid!")
+
+	mux := http.NewServeMux()
+	routes.SPRoutes(mux)
+	fmt.Println("Server running at http://localhost:8000")
+	http.ListenAndServe(":8000", mux)
 }
