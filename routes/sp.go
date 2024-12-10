@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	samlInitTmpl = "templates/sp_home.html"
+	samlInitTmplPath = "templates/sp_home.html"
 )
 
 func SPRoutes(mux *http.ServeMux) {
@@ -22,7 +22,7 @@ func SPRoutes(mux *http.ServeMux) {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, samlInitTmpl)
+	http.ServeFile(w, r, samlInitTmplPath)
 }
 
 func samlInitHandler(w http.ResponseWriter, r *http.Request) {

@@ -49,8 +49,7 @@ func main() {
 			Value: "urn:oasis:names:tc:SAML:2.0:status:Success",
 		},
 		Attributes: []authn.Attribute{
-			{Name: "Name", Value: "Pouria"},
-			{Name: "Email", Value: "tajpouria.dev@gmail.com"},
+			{Name: "Username", Value: "Pouria"},
 		},
 	}
 	authnResB, err := authnResD.GenerateXML(idpPrivateKey)
@@ -102,6 +101,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	routes.SPRoutes(mux)
+	routes.IDPRoutes(mux)
 	fmt.Println("Server running at http://localhost:8000")
 	http.ListenAndServe(":8000", mux)
 }
