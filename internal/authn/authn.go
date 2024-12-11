@@ -166,13 +166,13 @@ func (r *Response) GenerateXML(privateKey *rsa.PrivateKey) ([]byte, error) {
 	return tmplOutput.Bytes(), nil
 }
 
-func (r *Response) Verify(authnRes *[]byte, publicKey *rsa.PublicKey) error {
+func (r *Response) Verify(authnResB *[]byte, publicKey *rsa.PublicKey) error {
 	// Extract the assertion
 	assertRe, err := regexp.Compile(`(?s)<Assertion.*?</Assertion>`)
 	if err != nil {
 		return fmt.Errorf("[authn]: Failed to compile assertion regexp: %v", err)
 	}
-	assertB := assertRe.Find(*authnRes)
+	assertB := assertRe.Find(*authnResB)
 	if assertB == nil {
 		return &ErrBadSignature{Message: "assertion is empty"}
 	}
@@ -182,7 +182,7 @@ func (r *Response) Verify(authnRes *[]byte, publicKey *rsa.PublicKey) error {
 	if err != nil {
 		return fmt.Errorf("[authn]: Failed to signed info regexp: %v", err)
 	}
-	sigInfoB := sigInfoRe.Find(*authnRes)
+	sigInfoB := sigInfoRe.Find(*authnResB)
 	if sigInfoB == nil {
 		return &ErrBadSignature{Message: "signed info is empty"}
 	}

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>SP - SAML Init</title>
+    <title>SP - AC</title>
     <style>
       body {
         background-color: black;
@@ -15,13 +15,18 @@
         font-size: 2rem;
         padding: 1rem 2rem;
       }
-      a {
+      p {
         color: aliceblue;
       }
     </style>
   </head>
   <body>
-    <h1>Service Provider</h1>
-    <a href="/sp/saml/init"> Start SAML Authentication </a>
+    <h1>Service Provider Assertion Consumer</h1>
+    <h4>{{ .StatusCode }}</h4>
+    <div>
+      {{- range .Attributes }}
+      <h4>{{.Name}}: {{ .Value }}</h4>
+      {{- end }}
+    </div>
   </body>
 </html>

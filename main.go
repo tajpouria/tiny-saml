@@ -36,6 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to X.509 parse idP PK block: %v", err)
 	}
+	idpPkFile.Close()
 
 	// Read certificate
 	idpCertFile, err := os.Open(idpCertPath)
@@ -58,6 +59,7 @@ func main() {
 	if !ok {
 		log.Fatalf("Public key must be *rsa.PublicKey")
 	}
+	idpCertFile.Close()
 
 	mux := http.NewServeMux()
 	routes.InitSP(mux, idpPublicKey)

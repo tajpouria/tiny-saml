@@ -77,16 +77,18 @@ func ssoLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Decompress authn request
 	fr := flate.NewReader(bytes.NewReader(authReqB))
+	defer func() {
+		err = fr.Close()
+		if err != nil {
+			log.Printf("Failed to close the flate reader: %v", err)
+		}
+	}()
 	var flateOutput bytes.Buffer
 	_, err = io.Copy(&flateOutput, fr)
 	if err != nil {
 		http.Error(w, "Failed to flate decompress authn, request", http.StatusBadRequest)
 		log.Printf("Failed to copy from flate reader to output: %v", err)
 		return
-	}
-	err = fr.Close()
-	if err != nil {
-		log.Printf("Failed to close the flare reader: %v", err)
 	}
 	authReqB = flateOutput.Bytes()
 	flateOutput.Reset()
@@ -117,10 +119,10 @@ func ssoLoginHandler(w http.ResponseWriter, r *http.Request) {
 			Value: "urn:oasis:names:tc:SAML:2.0:status:Success",
 		},
 		Attributes: []authn.Attribute{
-			{Name: "Username", Value: "Pouria"},
+			{Name: "Username", Value: username},
 		},
 	}
-	assertResB, err := authnRes.GenerateXML(idpPrivateKey)
+	authnResB, err := authnRes.GenerateXML(idpPrivateKey)
 	if err != nil {
 		http.Error(w, "Failed to generate authn response", http.StatusInternalServerError)
 		log.Printf("Failed to generate authn response XML: %v", err)
@@ -134,7 +136,7 @@ func ssoLoginHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to init flate writer: %v", err)
 		return
 	}
-	_, err = fw.Write(assertResB)
+	_, err = fw.Write(authnResB)
 	if err != nil {
 		http.Error(w, "Failed to generate authn response", http.StatusInternalServerError)
 		log.Printf("Failed to write the response to flate writer: %v", err)
@@ -142,11 +144,14 @@ func ssoLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = fw.Close()
 	if err != nil {
-		log.Printf("Failed to close the flate writer: %v", err)
+		http.Error(w, "Failed to finalize compression", http.StatusInternalServerError)
+		log.Printf("Failed to close flate writer: %v", err)
+		return
 	}
+	authnResB = flateOutput.Bytes()
 
 	// Base64 encode the authn response
-	authnResS := base64.URLEncoding.EncodeToString(authReqB)
+	authnResS := base64.URLEncoding.EncodeToString(authnResB)
 
 	// Redirect to service provider assertion consumer URL with authn response
 	acURL = fmt.Sprintf("%s?SAMLResponse=%s", acURL, authnResS)
