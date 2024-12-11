@@ -64,6 +64,6 @@ func main() {
 	mux := http.NewServeMux()
 	routes.InitSP(mux, idpPublicKey)
 	routes.InitIDP(mux, idpPrivateKey)
-	fmt.Println("Server running at http://localhost:8000")
+	fmt.Println("Go to http://localhost:8000/sp")
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
