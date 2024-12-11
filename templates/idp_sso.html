@@ -31,7 +31,7 @@
   </head>
   <body>
     <h1>Identity Provider SSO</h1>
-    <form id="sso-login-form">
+    <form id="sso-logon-form">
       <label>Username <input type="text" name="username" required /></label>
       <label>Password <input type="password" name="password" required /></label>
       <button type="submit">Login</button>
@@ -39,21 +39,29 @@
 
     <script>
       document
-        .getElementById("sso-login-form")
+        .getElementById("sso-logon-form")
         .addEventListener("submit", async function (event) {
           event.preventDefault();
 
           const urlParams = new URLSearchParams(window.location.search);
-          const samlRequest = urlParams.get("SAMLRequest");
+
           const formData = new FormData(event.target);
-          formData.append("SAMLRequest", samlRequest);
+          const username = formData.get("username");
+          const password = formData.get("password");
+          const samlRequest = urlParams.get("SAMLRequest");
 
           try {
             const response = await fetch("/idp/sso/logon", {
               method: "POST",
-              body: formData,
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username,
+                password,
+                samlRequest,
+              }),
             });
-
             if (!response.ok) {
               throw new Error("Failed to authenticate.");
             }

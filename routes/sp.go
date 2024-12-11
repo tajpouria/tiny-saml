@@ -3,6 +3,7 @@ package routes
 import (
 	"bytes"
 	"compress/flate"
+	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -16,7 +17,10 @@ const (
 	samlInitTmplPath = "templates/sp_home.html"
 )
 
-func SPRoutes(mux *http.ServeMux) {
+var idpPublicKey *rsa.PublicKey
+
+func InitSP(mux *http.ServeMux, key *rsa.PublicKey) {
+	idpPublicKey = key
 	mux.HandleFunc("/sp", homeHandler)
 	mux.HandleFunc("/sp/saml/init", samlInitHandler)
 }
@@ -42,7 +46,7 @@ func samlInitHandler(w http.ResponseWriter, r *http.Request) {
 	fw, err := flate.NewWriter(&flateOutput, 2)
 	if err != nil {
 		http.Error(w, "Failed to generate authn request", http.StatusInternalServerError)
-		log.Printf("Failed to initial flate writer: %v", err)
+		log.Printf("Failed to init flate writer: %v", err)
 	}
 	_, err = fw.Write(authnReqB)
 	if err != nil {
@@ -56,9 +60,9 @@ func samlInitHandler(w http.ResponseWriter, r *http.Request) {
 	authnReqB = flateOutput.Bytes()
 
 	// Base64 encode authn request
-	authnReqS := base64.StdEncoding.EncodeToString(authnReqB)
+	authnReqS := base64.URLEncoding.EncodeToString(authnReqB)
 
-	// Redirect to idP SSO endpoint with authn request
+	// Redirect to identity provider SSO endpoint with authn request
 	ssoURL := fmt.Sprintf("http://localhost:8000/idp/sso?SAMLRequest=%s", authnReqS)
 	http.Redirect(w, r, ssoURL, http.StatusFound)
 }
